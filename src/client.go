@@ -14,6 +14,8 @@ type nxrClient struct {
 
 // newClient creates a new client to access Nexus Repository
 // and exposes it for any secrets or roles to use.
+//
+//nolint:unused
 func newClient(config *adminConfig) (*nxrClient, error) {
 	if config == nil {
 		return nil, errors.New("client configuration was nil")
@@ -35,7 +37,7 @@ func newClient(config *adminConfig) (*nxrClient, error) {
 		Username: config.Username,
 		Password: config.Password,
 		Insecure: config.Insecure,
-		Timeout:  config.Timeout,
+		Timeout:  &config.Timeout,
 	})
 
 	return &nxrClient{c}, nil

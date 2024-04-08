@@ -31,10 +31,10 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 // backend defines an object that extends the Vault backend and stores the API client
 type backend struct {
 	*framework.Backend
-	configMutex sync.RWMutex
-	rolesMutex  sync.RWMutex
 	client      *nxrClient
-	version     string
+	configMutex sync.RWMutex
+	// rolesMutex  sync.RWMutex
+	// version     string
 }
 
 // newBackend create a backend
@@ -50,6 +50,11 @@ func newBackend() *backend {
 		PathsSpecial: &logical.Paths{
 			SealWrapStorage: []string{pathConfigAdmin},
 		},
+		Paths: framework.PathAppend(
+			[]*framework.Path{
+				pathConfig(b),
+			},
+		),
 	}
 
 	return b
