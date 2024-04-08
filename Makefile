@@ -35,4 +35,11 @@ local-lint:
 
 ## Test
 test:
-	go test -v ./...
+	gotest -v ./src/...
+
+test-coverage:
+	go clean -testcache &&\
+		gotest -coverprofile=c.out -v ./src/...
+
+
+.PHONY: fmt gofmt gofumpt goimports tidy check statccheck lint local-lint test test-coverage

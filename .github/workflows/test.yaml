@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [1.22]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Setup tools
+        run: sudo apt-get update && sudo apt-get install -y make
+      - name: Setup gotest
+        run: curl -L https://gotest-release.s3.amazonaws.com/gotest_linux > gotest && chmod +x gotest && sudo mv gotest /usr/bin/gotest
+      - name: Test
+        if: github.event_name == 'pull_request'
+        run: make test 
+
+
+      - name: Hack Code Climate and Go Modules
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
+        run: mkdir -p github.com/${{ github.repository_owner }} && ln -sf $(pwd) github.com/${{ github.repository }}
+      - name: Test & publish code coverage
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
+        uses: paambaati/codeclimate-action@v5
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+        with:
+          coverageCommand: make test-coverage
+          debug: true
