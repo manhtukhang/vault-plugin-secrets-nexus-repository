@@ -1,0 +1,21 @@
+name: Security scanning
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+
+jobs:
+  security:
+    if: github.repository == 'manhtukhang/vault-plugin-secrets-nexus-repository'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Snyk to check for code vulnerabilities
+        uses: snyk/actions/golang@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
