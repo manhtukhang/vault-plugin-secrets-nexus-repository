@@ -1,15 +1,26 @@
 name: Lint
 on:
   push:
-    tags:
-      - v*
-    branches:
-      - '**'
   pull_request:
 jobs:
+  pre_job:
+    # continue-on-error: true
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5
+        with:
+          concurrent_skipping: 'same_content_newer'
+          skip_after_successful_duplicate: 'true'
+          cancel_others: 'true'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
   golangci:
     name: GolangCI Lint
+    needs: pre_job
     runs-on: ubuntu-latest
+    if: needs.pre_job.outputs.should_skip != 'true'
     steps:
       - uses: actions/checkout@v4
       - name: golangci-lint

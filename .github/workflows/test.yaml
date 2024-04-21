@@ -2,13 +2,25 @@ name: Test
 
 on:
   push:
-    branches:
-      - "**"
   pull_request:
 
 jobs:
+  pre_job:
+    # continue-on-error: true
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5
+        with:
+          concurrent_skipping: 'same_content_newer'
+          skip_after_successful_duplicate: 'true'
+          cancel_others: 'true'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
   test:
     name: Test
+    needs: pre_job
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,11 +35,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y make
       - name: Setup gotest
         run: curl -L https://gotest-release.s3.amazonaws.com/gotest_linux > gotest && chmod +x gotest && sudo mv gotest /usr/bin/gotest
+      #
       - name: Test
-        if: github.event_name == 'pull_request'
-        run: make test 
-
-
+        if: needs.pre_job.outputs.should_skip != 'true'
+        run: make test-coverage
+      #
       - name: Hack Code Climate and Go Modules
         if: github.event_name != 'pull_request' && github.ref_name == 'main'
         run: mkdir -p github.com/${{ github.repository_owner }} && ln -sf $(pwd) github.com/${{ github.repository }}
