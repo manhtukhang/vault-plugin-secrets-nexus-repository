@@ -1,8 +1,6 @@
 module github.com/manhtukhang/vault-plugin-secrets-nexus-repository
 
-go 1.22
-
-toolchain go1.22.0
+go 1.22.1
 
 require (
 	github.com/datadrivers/go-nexus-client v1.10.0

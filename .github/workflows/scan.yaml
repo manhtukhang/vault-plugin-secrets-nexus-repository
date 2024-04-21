@@ -1,14 +1,17 @@
 name: Security scanning
 on:
   push:
-    tags:
-      - v*
     branches:
       - main
+  schedule:
+    - cron: '0 0 * * *' # daily
 
 jobs:
   security:
     if: github.repository == 'manhtukhang/vault-plugin-secrets-nexus-repository'
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -19,3 +22,10 @@ jobs:
         uses: snyk/actions/golang@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true # To make sure that SARIF upload gets called
+        with:
+          args: --sarif-file-output=snyk.sarif
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk.sarif
