@@ -99,7 +99,7 @@ func TestConfig(t *testing.T) {
 func testConfigDelete(b logical.Backend, s logical.Storage) error {
 	resp, err := b.HandleRequest(context.Background(), &logical.Request{
 		Operation: logical.DeleteOperation,
-		Path:      pathConfigAdmin,
+		Path:      configAdminPath,
 		Storage:   s,
 	})
 	if err != nil {
@@ -115,7 +115,7 @@ func testConfigDelete(b logical.Backend, s logical.Storage) error {
 func testConfigCreate(b logical.Backend, s logical.Storage, d map[string]interface{}) error {
 	resp, err := b.HandleRequest(context.Background(), &logical.Request{
 		Operation: logical.CreateOperation,
-		Path:      pathConfigAdmin,
+		Path:      configAdminPath,
 		Data:      d,
 		Storage:   s,
 	})
@@ -132,7 +132,7 @@ func testConfigCreate(b logical.Backend, s logical.Storage, d map[string]interfa
 func testConfigUpdate(b logical.Backend, s logical.Storage, d map[string]interface{}) error {
 	resp, err := b.HandleRequest(context.Background(), &logical.Request{
 		Operation: logical.UpdateOperation,
-		Path:      pathConfigAdmin,
+		Path:      configAdminPath,
 		Data:      d,
 		Storage:   s,
 	})
@@ -149,7 +149,7 @@ func testConfigUpdate(b logical.Backend, s logical.Storage, d map[string]interfa
 func testConfigRead(b logical.Backend, s logical.Storage, expected map[string]interface{}) error {
 	resp, err := b.HandleRequest(context.Background(), &logical.Request{
 		Operation: logical.ReadOperation,
-		Path:      pathConfigAdmin,
+		Path:      configAdminPath,
 		Storage:   s,
 	})
 	if err != nil {
