@@ -2,34 +2,13 @@ package nxr
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
 const (
-	// pathConfigHelpSynopsis summarizes the help text for the configuration
-	pathConfigHelpSynopsis = `Configure the Nexus Repository admin configuration.`
-
-	// pathConfigHelpDescription describes the help text for the configuration
-	pathConfigHelpDescription = `
-The Nexus Repository secret backend requires credentials for managing user.
-
-You must create a username ("username" parameter)
-and password ("password" parameter)
-and specify the Nexus Repository address ("url" parameter)
-for the API before using this secrets backend.
-
-An optional "insecure" parameter will enable bypassing
-the TLS connection verification with Nexus Repository
-(when server using self-signed certificate).
-
-An optional "timeout" is the maximum time (in second)
-to wait before the request times out.
-`
-	pathConfigAdmin = "config/admin"
+	configAdminPath = "config/admin"
 )
 
 // adminConfig includes the minimum configuration
@@ -46,11 +25,11 @@ type adminConfig struct {
 // endpoint for the backend.
 func pathConfig(b *backend) *framework.Path {
 	return &framework.Path{
-		Pattern: pathConfigAdmin,
+		Pattern: configAdminPath,
 		Fields: map[string]*framework.FieldSchema{
 			"username": {
 				Type:        framework.TypeLowerCaseString,
-				Description: "The username to access Nexus Repository API",
+				Description: "The username to access Nexus Repository API.",
 				Required:    true,
 				DisplayAttrs: &framework.DisplayAttributes{
 					Name:      "Username",
@@ -58,8 +37,8 @@ func pathConfig(b *backend) *framework.Path {
 				},
 			},
 			"password": {
-				Type:        framework.TypeLowerCaseString,
-				Description: "The user's password to access Nexus Repository API",
+				Type:        framework.TypeString,
+				Description: "The user's password to access Nexus Repository API.",
 				Required:    true,
 				DisplayAttrs: &framework.DisplayAttributes{
 					Name:      "Password",
@@ -68,7 +47,7 @@ func pathConfig(b *backend) *framework.Path {
 			},
 			"url": {
 				Type:        framework.TypeLowerCaseString,
-				Description: "The URL for the Nexus Repository API",
+				Description: "The URL for the Nexus Repository API.",
 				Required:    true,
 				DisplayAttrs: &framework.DisplayAttributes{
 					Name:      "URL",
@@ -78,7 +57,7 @@ func pathConfig(b *backend) *framework.Path {
 			"insecure": {
 				Type:        framework.TypeBool,
 				Default:     false,
-				Description: "Optional. Bypass certification verification for TLS connection with Nexus Repository API. Default to `false`",
+				Description: "Optional. Bypass certification verification for TLS connection with Nexus Repository API. Default to `false`.",
 				DisplayAttrs: &framework.DisplayAttributes{
 					Name:      "Insecure",
 					Sensitive: false,
@@ -87,7 +66,7 @@ func pathConfig(b *backend) *framework.Path {
 			"timeout": {
 				Type:        framework.TypeInt,
 				Default:     30,
-				Description: "Optional. Timeout for connection with Nexus Repository API. Default to `30` (second)",
+				Description: "Optional. Timeout for connection with Nexus Repository API. Default to `30` (second).",
 				DisplayAttrs: &framework.DisplayAttributes{
 					Name:      "Timeout",
 					Sensitive: false,
@@ -97,19 +76,19 @@ func pathConfig(b *backend) *framework.Path {
 		Operations: map[logical.Operation]framework.OperationHandler{
 			logical.ReadOperation: &framework.PathOperation{
 				Callback: b.pathConfigRead,
-				Summary:  "Examine the Nexus Repository admin configuration",
+				Summary:  "Examine the Nexus Repository admin configuration.",
 			},
 			logical.CreateOperation: &framework.PathOperation{
 				Callback: b.pathConfigWrite,
-				Summary:  "Create the Nexus Repository admin configuration",
+				Summary:  "Create the Nexus Repository admin configuration.",
 			},
 			logical.UpdateOperation: &framework.PathOperation{
 				Callback: b.pathConfigWrite,
-				Summary:  "Update (overwrite) the Nexus Repository admin configuration",
+				Summary:  "Update (overwrite) the Nexus Repository admin configuration.",
 			},
 			logical.DeleteOperation: &framework.PathOperation{
 				Callback: b.pathConfigDelete,
-				Summary:  "Delete the Nexus Repository admin configuration",
+				Summary:  "Delete the Nexus Repository admin configuration.",
 			},
 		},
 		ExistenceCheck:  b.pathConfigExistenceCheck,
@@ -122,7 +101,7 @@ func pathConfig(b *backend) *framework.Path {
 func (b *backend) pathConfigExistenceCheck(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
 	out, err := req.Storage.Get(ctx, req.Path)
 	if err != nil {
-		return false, fmt.Errorf("existence check failed: %w", err)
+		return false, err
 	}
 
 	return out != nil, nil
@@ -133,7 +112,7 @@ func (b *backend) pathConfigRead(ctx context.Context, req *logical.Request, data
 	b.configMutex.Lock()
 	defer b.configMutex.Unlock()
 
-	config, err := fetchAdminConfig(ctx, req.Storage)
+	config, err := b.fetchAdminConfig(ctx, req.Storage)
 	if err != nil {
 		return nil, err
 	}
@@ -156,35 +135,33 @@ func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, dat
 	b.configMutex.Lock()
 	defer b.configMutex.Unlock()
 
-	createOperation := (req.Operation == logical.CreateOperation)
-
-	config, err := fetchAdminConfig(ctx, req.Storage)
+	config, err := b.fetchAdminConfig(ctx, req.Storage)
 	if err != nil {
 		return nil, err
 	}
 	if config == nil {
-		if !createOperation {
-			return nil, errors.New("admin configuration not found during update operation")
-		}
-		config = new(adminConfig)
+		config = &adminConfig{}
 	}
+
+	createOperation := (req.Operation == logical.CreateOperation)
 
 	if username, ok := data.GetOk("username"); ok {
 		config.Username = username.(string)
 	} else if !ok && createOperation {
-		return nil, fmt.Errorf("missing username in admin configuration")
+		return logical.ErrorResponse("missing username in admin configuration"), nil
 	}
 
 	if url, ok := data.GetOk("url"); ok {
 		config.URL = url.(string)
+		config.Password = "" // NOTE: clear password if URL changes, requires setting password and url together for security reasons
 	} else if !ok && createOperation {
-		return nil, fmt.Errorf("missing url in admin configuration")
+		return logical.ErrorResponse("missing url in admin configuration"), nil
 	}
 
 	if password, ok := data.GetOk("password"); ok {
 		config.Password = password.(string)
 	} else if !ok && createOperation {
-		return nil, fmt.Errorf("missing password in admin configuration")
+		return logical.ErrorResponse("missing password in admin configuration"), nil
 	}
 
 	if insecure, ok := data.GetOk("insecure"); ok {
@@ -195,7 +172,7 @@ func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, dat
 		config.Timeout = timeout.(int)
 	}
 
-	entry, err := logical.StorageEntryJSON(pathConfigAdmin, config)
+	entry, err := logical.StorageEntryJSON(configAdminPath, config)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +192,7 @@ func (b *backend) pathConfigDelete(ctx context.Context, req *logical.Request, da
 	b.configMutex.Lock()
 	defer b.configMutex.Unlock()
 
-	config, err := fetchAdminConfig(ctx, req.Storage)
+	config, err := b.fetchAdminConfig(ctx, req.Storage)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +200,7 @@ func (b *backend) pathConfigDelete(ctx context.Context, req *logical.Request, da
 		return logical.ErrorResponse("admin configuration not found"), nil
 	}
 
-	err = req.Storage.Delete(ctx, pathConfigAdmin)
+	err = req.Storage.Delete(ctx, configAdminPath)
 	if err == nil {
 		b.client = nil
 	}
@@ -231,8 +208,9 @@ func (b *backend) pathConfigDelete(ctx context.Context, req *logical.Request, da
 	return nil, err
 }
 
-func fetchAdminConfig(ctx context.Context, s logical.Storage) (*adminConfig, error) {
-	entry, err := s.Get(ctx, pathConfigAdmin)
+// fetchAdminConfig fetches admin configuration for the backend
+func (b *backend) fetchAdminConfig(ctx context.Context, s logical.Storage) (*adminConfig, error) {
+	entry, err := s.Get(ctx, configAdminPath)
 	if err != nil {
 		return nil, err
 	}
@@ -241,11 +219,31 @@ func fetchAdminConfig(ctx context.Context, s logical.Storage) (*adminConfig, err
 		return nil, nil
 	}
 
-	config := new(adminConfig)
+	config := &adminConfig{}
 	if err := entry.DecodeJSON(&config); err != nil {
-		return nil, fmt.Errorf("error fetching admin configuration: %w", err)
+		return nil, err
 	}
 
 	// return the config, we are done
 	return config, nil
 }
+
+const (
+	pathConfigHelpSynopsis = `Configure the Nexus Repository admin configuration.`
+
+	pathConfigHelpDescription = `
+The Nexus Repository secret backend requires credentials for managing user.
+
+You must create a username ("username" parameter)
+and password ("password" parameter)
+and specify the Nexus Repository address ("url" parameter)
+for the API before using this secrets backend.
+
+An optional "insecure" parameter will enable bypassing
+the TLS connection verification with Nexus Repository
+(when server using self-signed certificate).
+
+An optional "timeout" parameter is the maximum time (in seconds)
+to wait before the request to the API is timed out.
+`
+)

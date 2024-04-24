@@ -48,7 +48,7 @@ func newBackend() *backend {
 		Invalidate:     b.invalidate,
 
 		PathsSpecial: &logical.Paths{
-			SealWrapStorage: []string{pathConfigAdmin},
+			SealWrapStorage: []string{configAdminPath},
 		},
 		Paths: framework.PathAppend(
 			[]*framework.Path{
