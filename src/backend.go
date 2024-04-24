@@ -53,6 +53,7 @@ func newBackend() *backend {
 		Paths: framework.PathAppend(
 			[]*framework.Path{
 				pathConfig(b),
+				pathConfigRotate(b),
 			},
 		),
 	}
@@ -74,4 +75,37 @@ func (b *backend) reset() {
 	b.configMutex.Lock()
 	defer b.configMutex.Unlock()
 	b.client = nil
+}
+
+// getClient locks the backend as it configures and creates
+// a new client for the Nexus Repository API
+func (b *backend) getClient(ctx context.Context, s logical.Storage) (*nxrClient, error) {
+	b.configMutex.RLock()
+	unlockFunc := b.configMutex.RUnlock
+
+	//nolint:gocritic
+	defer func() { unlockFunc() }()
+
+	if b.client != nil {
+		return b.client, nil
+	}
+
+	b.configMutex.RUnlock()
+	b.configMutex.Lock()
+	unlockFunc = b.configMutex.Unlock
+
+	config, err := b.fetchAdminConfig(ctx, s)
+	if err != nil {
+		return nil, err
+	}
+	if config == nil {
+		config = &adminConfig{}
+	}
+
+	b.client, err = newClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return b.client, nil
 }
