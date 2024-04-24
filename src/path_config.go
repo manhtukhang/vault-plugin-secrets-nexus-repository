@@ -37,7 +37,7 @@ func pathConfig(b *backend) *framework.Path {
 				},
 			},
 			"password": {
-				Type:        framework.TypeLowerCaseString,
+				Type:        framework.TypeString,
 				Description: "The user's password to access Nexus Repository API.",
 				Required:    true,
 				DisplayAttrs: &framework.DisplayAttributes{
