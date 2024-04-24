@@ -1,7 +1,6 @@
 package nxr
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -10,11 +9,11 @@ import (
 )
 
 const (
-	username = "admin"
-	password = "Testing!123"
-	url      = "http://localhost:1234"
-	insecure = true
-	timeout  = 30
+	testConfigAdminUsername = "admin"
+	testConfigAdminPassword = "Testing!123"
+	testConfigAdminURL      = "http://localhost:1234"
+	testConfigAdminInsecure = true
+	testConfigAdminTimeout  = 30
 )
 
 // TestConfig mocks the creation, read, update, and delete
@@ -33,22 +32,22 @@ func TestConfig(t *testing.T) {
 
 		// Missing "username"
 		err = testConfigCreate(b, reqStorage, map[string]interface{}{
-			"password": password,
-			"url":      url,
+			"password": testConfigAdminPassword,
+			"url":      testConfigAdminURL,
 		})
 		assert.Error(t, err)
 
 		// Missing "password"
 		err = testConfigCreate(b, reqStorage, map[string]interface{}{
-			"username": username,
-			"url":      url,
+			"username": testConfigAdminUsername,
+			"url":      testConfigAdminURL,
 		})
 		assert.Error(t, err)
 
 		// Missing "url"
 		err = testConfigCreate(b, reqStorage, map[string]interface{}{
-			"username": username,
-			"password": password,
+			"username": testConfigAdminUsername,
+			"password": testConfigAdminPassword,
 		})
 		assert.Error(t, err)
 	})
@@ -56,37 +55,37 @@ func TestConfig(t *testing.T) {
 	t.Run("Happy cases", func(t *testing.T) {
 		// No "insecure" + "timeout"
 		err := testConfigCreate(b, reqStorage, map[string]interface{}{
-			"username": username,
-			"password": password,
-			"url":      url,
+			"username": testConfigAdminUsername,
+			"password": testConfigAdminPassword,
+			"url":      testConfigAdminURL,
 		})
 		assert.NoError(t, err)
 
 		// "insecure"
 		err = testConfigCreate(b, reqStorage, map[string]interface{}{
-			"username": username,
-			"password": password,
-			"url":      url,
-			"insecure": insecure,
+			"username": testConfigAdminUsername,
+			"password": testConfigAdminPassword,
+			"url":      testConfigAdminURL,
+			"insecure": testConfigAdminInsecure,
 		})
 		assert.NoError(t, err)
 
 		// Update after create
 		err = testConfigUpdate(b, reqStorage, map[string]interface{}{
-			"username": username,
-			"password": password,
-			"url":      url,
-			"insecure": !insecure,
-			"timeout":  timeout,
+			"username": testConfigAdminUsername,
+			"password": testConfigAdminPassword,
+			"url":      testConfigAdminURL,
+			"insecure": !testConfigAdminInsecure,
+			"timeout":  testConfigAdminTimeout,
 		})
 		assert.NoError(t, err)
 
 		// Read after update
 		err = testConfigRead(b, reqStorage, map[string]interface{}{
-			"username": username,
-			"url":      url,
-			"insecure": !insecure,
-			"timeout":  timeout,
+			"username": testConfigAdminUsername,
+			"url":      testConfigAdminURL,
+			"insecure": !testConfigAdminInsecure,
+			"timeout":  testConfigAdminTimeout,
 		})
 		assert.NoError(t, err)
 
@@ -97,11 +96,7 @@ func TestConfig(t *testing.T) {
 }
 
 func testConfigDelete(b logical.Backend, s logical.Storage) error {
-	resp, err := b.HandleRequest(context.Background(), &logical.Request{
-		Operation: logical.DeleteOperation,
-		Path:      configAdminPath,
-		Storage:   s,
-	})
+	resp, err := deleteConfigAdmin(b, s)
 	if err != nil {
 		return err
 	}
@@ -113,12 +108,7 @@ func testConfigDelete(b logical.Backend, s logical.Storage) error {
 }
 
 func testConfigCreate(b logical.Backend, s logical.Storage, d map[string]interface{}) error {
-	resp, err := b.HandleRequest(context.Background(), &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      configAdminPath,
-		Data:      d,
-		Storage:   s,
-	})
+	resp, err := writeConfigAdmin(b, s, d)
 	if err != nil {
 		return err
 	}
@@ -130,12 +120,7 @@ func testConfigCreate(b logical.Backend, s logical.Storage, d map[string]interfa
 }
 
 func testConfigUpdate(b logical.Backend, s logical.Storage, d map[string]interface{}) error {
-	resp, err := b.HandleRequest(context.Background(), &logical.Request{
-		Operation: logical.UpdateOperation,
-		Path:      configAdminPath,
-		Data:      d,
-		Storage:   s,
-	})
+	resp, err := writeConfigAdmin(b, s, d)
 	if err != nil {
 		return err
 	}
@@ -147,11 +132,7 @@ func testConfigUpdate(b logical.Backend, s logical.Storage, d map[string]interfa
 }
 
 func testConfigRead(b logical.Backend, s logical.Storage, expected map[string]interface{}) error {
-	resp, err := b.HandleRequest(context.Background(), &logical.Request{
-		Operation: logical.ReadOperation,
-		Path:      configAdminPath,
-		Storage:   s,
-	})
+	resp, err := readConfigAdmin(b, s)
 	if err != nil {
 		return err
 	}
