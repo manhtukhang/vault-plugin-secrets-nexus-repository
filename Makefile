@@ -39,7 +39,7 @@ test:
 
 test-coverage:
 	go clean -testcache &&\
-		gotest -coverprofile=c.out -v ./src/...
+		gotest -coverprofile=c.out -v -tags=test ./src/...
 
 
 .PHONY: fmt gofmt gofumpt goimports tidy check statccheck lint local-lint test test-coverage
