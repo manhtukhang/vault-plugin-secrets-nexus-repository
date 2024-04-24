@@ -2,6 +2,7 @@ package nxr
 
 import (
 	"context"
+
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
