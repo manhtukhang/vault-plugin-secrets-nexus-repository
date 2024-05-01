@@ -1,12 +1,14 @@
 package nxr
 
 import (
-	"context"
 	"fmt"
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.nhat.io/httpmock"
 )
@@ -15,76 +17,114 @@ const (
 	userChangePasswordURI = "/service/rest/v1/security/users/%s/change-password"
 )
 
-func TestConfigRotateWithMockApi(t *testing.T) {
-	b, reqStorage := getTestBackend(t)
-
-	t.Run("Unhappy cases", func(t *testing.T) {
-		// Rotate empty config
-		err := testConfigRotateWrite(b, reqStorage)
-		assert.Error(t, err)
-
-		// GatewayTimeout
-		srv := httpmock.New(func(s *httpmock.Server) {
-			s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
-				ReturnCode(httpmock.StatusGatewayTimeout)
-		})(t)
-
-		_, err = writeConfigAdmin(b, reqStorage, map[string]interface{}{
-			"username": testConfigAdminUsername,
-			"password": testConfigAdminPassword,
-			"url":      srv.URL(),
-		})
-		assert.NoError(t, err)
-
-		err = testConfigRotateWrite(b, reqStorage)
-		assert.Error(t, err)
-
-		// User does not have permission to perform the operation
-		srv = httpmock.New(func(s *httpmock.Server) {
-			s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
-				ReturnCode(httpmock.StatusForbidden)
-		})(t)
-
-		_, err = writeConfigAdmin(b, reqStorage, map[string]interface{}{
-			"username": testConfigAdminUsername,
-			"password": testConfigAdminPassword,
-			"url":      srv.URL(),
-		})
-		assert.NoError(t, err)
-
-		err = testConfigRotateWrite(b, reqStorage)
-		assert.Error(t, err)
-	})
-
-	t.Run("Happy cases", func(t *testing.T) {
-		srv := httpmock.New(func(s *httpmock.Server) {
-			s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
-				ReturnCode(httpmock.StatusOK)
-		})(t)
-
-		_, err := writeConfigAdmin(b, reqStorage, map[string]interface{}{
-			"username": testConfigAdminUsername,
-			"password": testConfigAdminPassword,
-			"url":      srv.URL(),
-		})
-		assert.NoError(t, err)
-
-		err = testConfigRotateWrite(b, reqStorage)
-		assert.NoError(t, err)
-	})
+func Test_ConfigRotate(t *testing.T) {
+	t.Run("ConfigRotate_Fail", testConfigRotate_Fail)
+	t.Run("ConfigRotate_WithMockApi", testConfigRotate_WithMockApi)
+	t.Run("ConfigRotate_WithMockApi_Fail", testConfigRotate_WithMockApi_Fail)
 }
 
-func testConfigRotateWrite(b logical.Backend, s logical.Storage) error {
-	resp, err := b.HandleRequest(context.Background(), &logical.Request{
-		Operation: logical.UpdateOperation,
-		Path:      configRotatePath,
-		Storage:   s,
-	})
-	if err != nil {
-		return err
+func testConfigRotate_Fail(t *testing.T) {
+	b, reqStorage := getTestBackend(t)
+
+	// Rotate empty config
+	expectedError := `admin configuration not found`
+
+	resp, err := doAction(actionUpdate, configRotatePath, b, reqStorage, nil)
+
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.True(t, resp.IsError())
+	assert.Equal(t, expectedError, resp.Error().Error())
+
+	// Unsupported operations
+	expectedError = `unsupported operation`
+	for _, v := range []logical.Operation{actionCreate, actionRead, actionDelete} {
+		resp, err = doAction(v, configRotatePath, b, reqStorage, nil)
+
+		require.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Equal(t, expectedError, err.Error())
+
 	}
-	if resp != nil && resp.IsError() {
-		return resp.Error()
+}
+
+func testConfigRotate_WithMockApi(t *testing.T) {
+	b, reqStorage := getTestBackend(t)
+
+	mockSrv := httpmock.New(func(s *httpmock.Server) {
+		s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
+			ReturnCode(httpmock.StatusOK)
+	})(t)
+
+	data := &testData{
+		"username": testConfigAdminUsername,
+		"password": testConfigAdminPassword,
+		"url":      mockSrv.URL(),
 	}
-	return nil
+
+	// Create base config
+	resp, err := doAction(actionCreate, configAdminPath, b, reqStorage, *data)
+
+	require.NoError(t, err)
+	assert.Nil(t, resp)
+
+	// Rotate
+	resp, err = doAction(actionUpdate, configRotatePath, b, reqStorage, nil)
+
+	require.NoError(t, err)
+	assert.Nil(t, resp)
+}
+
+func testConfigRotate_WithMockApi_Fail(t *testing.T) {
+	b, reqStorage := getTestBackend(t)
+
+	testCases := []struct {
+		mockSrv       *httpmock.Server
+		expectedError string
+	}{
+		{
+			mockSrv: httpmock.New(func(s *httpmock.Server) {
+				s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
+					ReturnCode(httpmock.StatusGatewayTimeout)
+			})(t),
+			expectedError: fmt.Sprintf(`could not change password of user 'admin':  HTTP: %d`, httpmock.StatusGatewayTimeout),
+		},
+		{
+			mockSrv: httpmock.New(func(s *httpmock.Server) {
+				s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
+					ReturnCode(httpmock.StatusBadGateway)
+			})(t),
+			expectedError: fmt.Sprintf(`could not change password of user 'admin':  HTTP: %d`, httpmock.StatusBadGateway),
+		},
+		{
+			mockSrv: httpmock.New(func(s *httpmock.Server) {
+				s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
+					ReturnCode(httpmock.StatusRequestTimeout)
+			})(t),
+			expectedError: fmt.Sprintf(`could not change password of user 'admin':  HTTP: %d`, httpmock.StatusRequestTimeout),
+		},
+		{
+			mockSrv: httpmock.New(func(s *httpmock.Server) {
+				s.ExpectPut(fmt.Sprintf(userChangePasswordURI, testConfigAdminUsername)).
+					ReturnCode(httpmock.StatusOK).
+					After(2 * time.Second)
+			})(t),
+			expectedError: `could not change password of user 'admin':.*(Client.Timeout exceeded while awaiting headers)`,
+		},
+	}
+
+	for _, tc := range testCases {
+		_, err := doAction(actionCreate, configAdminPath, b, reqStorage, testData{
+			"username": testConfigAdminUsername,
+			"password": testConfigAdminPassword,
+			"url":      tc.mockSrv.URL(),
+			"timeout":  "1s",
+		})
+		require.NoError(t, err)
+
+		resp, err := doAction(actionUpdate, configRotatePath, b, reqStorage, nil)
+		require.Error(t, err)
+		assert.Regexp(t, regexp.MustCompile(tc.expectedError), err.Error())
+		assert.Nil(t, resp)
+	}
 }
