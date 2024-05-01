@@ -85,6 +85,6 @@ const (
 	pathConfigRotateHelpSynopsis = `Rotate the Nexus Repository admin credential.`
 
 	pathConfigRotateHelpDescription = `
-This will rotate the "username" and "password" used to access Nexus Repository from this plugin.
-A new user is created first then revokes the old one.`
+This will rotate the "password" used to access Nexus Repository from this plugin.
+`
 )
