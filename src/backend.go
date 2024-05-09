@@ -52,7 +52,7 @@ func newBackend() *backend {
 		},
 		Paths: framework.PathAppend(
 			[]*framework.Path{
-				pathConfig(b),
+				pathConfigAdmin(b),
 				pathConfigRotate(b),
 			},
 		),
