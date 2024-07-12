@@ -3,7 +3,7 @@ module github.com/manhtukhang/vault-plugin-secrets-nexus-repository
 go 1.22.1
 
 require (
-	github.com/datadrivers/go-nexus-client v1.10.1
+	github.com/datadrivers/go-nexus-client v1.11.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/api v1.13.0
 	github.com/hashicorp/vault/sdk v0.12.0
