@@ -96,6 +96,8 @@ func testRoles_SimpleCRUD(t *testing.T) {
 
 	// Delete role
 	resp, err = doAction(actionDelete, rolesPath+testRoleName, b, reqStorage, nil)
+	require.NoError(t, err)
+	assert.Nil(t, resp)
 }
 
 func testRoles_Create_MissingRequireFields(t *testing.T) {
