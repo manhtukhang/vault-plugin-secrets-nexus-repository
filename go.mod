@@ -5,7 +5,7 @@ go 1.22.1
 require (
 	github.com/datadrivers/go-nexus-client v1.13.0
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/hashicorp/vault/api v1.14.0
+	github.com/hashicorp/vault/api v1.15.0
 	github.com/hashicorp/vault/sdk v0.14.0
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.9.0
@@ -17,7 +17,6 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/bool64/shared v0.1.5 // indirect
-	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
