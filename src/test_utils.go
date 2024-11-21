@@ -11,6 +11,7 @@ const (
 	actionUpdate = logical.UpdateOperation
 	actionRead   = logical.ReadOperation
 	actionDelete = logical.DeleteOperation
+	actionList   = logical.ListOperation
 )
 
 type testData map[string]interface{}
