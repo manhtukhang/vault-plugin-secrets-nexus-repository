@@ -54,9 +54,13 @@ func newBackend() *backend {
 			[]*framework.Path{
 				pathConfigAdmin(b),
 				pathConfigRotate(b),
+				pathCreds(b),
 			},
 			pathRoles(b),
 		),
+		Secrets: []*framework.Secret{
+			nxrUserSecret(b),
+		},
 	}
 
 	return b
