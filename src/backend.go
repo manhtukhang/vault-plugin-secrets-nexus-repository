@@ -33,7 +33,7 @@ type backend struct {
 	*framework.Backend
 	client      *nxrClient
 	configMutex sync.RWMutex
-	// rolesMutex  sync.RWMutex
+	rolesMutex  sync.RWMutex
 	// version     string
 }
 
@@ -55,6 +55,7 @@ func newBackend() *backend {
 				pathConfigAdmin(b),
 				pathConfigRotate(b),
 			},
+			pathRoles(b),
 		),
 	}
 
