@@ -58,7 +58,7 @@ func (b *backend) pathConfigRotateWrite(ctx context.Context, req *logical.Reques
 		return nil, err
 	}
 
-	if err = nxrClient.Security.User.ChangePassword(config.Username, newPw); err != nil {
+	if err = nxrClient.changeUserPassword(config.Username, newPw); err != nil {
 		return nil, err
 	}
 
