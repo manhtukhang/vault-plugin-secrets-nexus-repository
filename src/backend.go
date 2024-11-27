@@ -15,7 +15,7 @@ The Nexus Repository secrets backend provides dynamic user/password based on con
 `
 )
 
-var Version = "0.0.1"
+var Version = "v0.0.1"
 
 // Factory configs and returns backend
 func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend, error) {

@@ -117,6 +117,6 @@ func testCreds_WithMockApi_Fail(t *testing.T) {
 
 	// test get cred (Nexus user), expect error
 	resp, err = doAction(actionRead, testCredsPath, b, reqStorage, nil)
-	require.Error(t, err)
-	assert.Nil(t, resp)
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
 }

@@ -87,7 +87,8 @@ func (b *backend) creadCred(ctx context.Context, req *logical.Request, role *nxr
 		return nil, err
 	}
 
-	randomPassword, err := gopw.Generate(64, 10, 10, false, false)
+	// TODO: allow user configs password complexity
+	randomPassword, err := gopw.Generate(64, 10, 0, false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,7 @@ func (b *backend) creadCred(ctx context.Context, req *logical.Request, role *nxr
 
 	err = createNxrUser(client, userReq)
 	if err != nil {
-		return nil, err
+		return logical.ErrorResponse("could not create Nexus Repository user"), nil
 	}
 
 	responseData, err := userReq.toResponseData()
