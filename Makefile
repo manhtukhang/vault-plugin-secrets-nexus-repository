@@ -1,6 +1,8 @@
+PLUGIN_NAME ?= vault-plugin-secrets-nexus-repository
+
 .DEFAULT_GOAL := all
 
-all: fmt check test
+all: fmt check build test
 
 ## Format
 fmt: gofmt gofumpt goimports tidy
@@ -30,8 +32,13 @@ lint:
 	golint ./...
 
 local-lint:
-	docker run --rm -v $(shell pwd):/$(APPNAME) -w /$(APPNAME)/. \
+	docker run --rm -v $(shell pwd):/$(PLUGIN_NAME) -w /$(PLUGIN_NAME)/. \
 	  golangci/golangci-lint golangci-lint run --sort-results -v
+
+## Build
+build:
+	mkdir -p dist/bin
+	CGO_ENABLED=0 go build -trimpath -ldflags="-w -s" -o dist/bin/$(PLUGIN_NAME) ./src/cmd/$(PLUGIN_NAME)/main.go
 
 ## Test
 test:
@@ -41,5 +48,7 @@ test-coverage:
 	go clean -testcache &&\
 		gotest -coverprofile=c.out -v -tags=test ./src/...
 
+test-acceptance:
+	VAULT_PLUGIN_DIR="./dist/bin" bats test/acceptance-tests.bats
 
-.PHONY: fmt gofmt gofumpt goimports tidy check statccheck lint local-lint test test-coverage
+.PHONY: fmt gofmt gofumpt goimports tidy check statccheck lint local-lint build test test-coverage
