@@ -48,7 +48,8 @@ func (b *backend) pathConfigRotateWrite(ctx context.Context, req *logical.Reques
 		return logical.ErrorResponse("admin configuration not found"), nil
 	}
 
-	newPw, err := gopw.Generate(64, 10, 10, false, false)
+	// TODO: allow user configs password complexity
+	newPw, err := gopw.Generate(64, 10, 0, false, true)
 	if err != nil {
 		return nil, err
 	}
