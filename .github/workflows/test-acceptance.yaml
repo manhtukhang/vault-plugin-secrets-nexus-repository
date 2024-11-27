@@ -1,0 +1,58 @@
+name: Acceptance Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pre_job:
+    # continue-on-error: true
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5
+        with:
+          concurrent_skipping: 'same_content_newer'
+          skip_after_successful_duplicate: 'true'
+          cancel_others: 'true'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+  build:
+    name: Build plugin executable binary
+    needs: pre_job
+    runs-on: ubuntu-latest
+    if: needs.pre_job.outputs.should_skip != 'true'
+    steps:
+      - 
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - 
+        name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache-dependency-path: ./go.sum
+      - 
+        name: Build plugin
+        id: build-plugin
+        run: make build
+      - 
+        name: Upload plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: vault-plugin-secrets-nexus-repository
+          path: dist/bin
+          if-no-files-found: error
+  test:
+    needs: [pre_job, build]
+    strategy:
+      matrix:
+        vault: ["1.17.6", "1.18.2"]
+        nexus: ["3.73.0", "3.74.0"]
+    uses: ./.github/workflows/_test-acceptance.tmpl.yaml
+    with:
+      vault-version: ${{ matrix.vault }}  
+      nxr-version: ${{ matrix.nexus }}  
+      vault-plugin-dir: ./dist/bin

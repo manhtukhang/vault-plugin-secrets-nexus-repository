@@ -1,0 +1,62 @@
+name: Acceptance Test
+
+on:
+  workflow_call:
+    inputs:
+      vault-version:
+        required: false
+        type: string
+        default: "lastest"
+      vault-plugin-dir:
+        required: false
+        type: string
+        default: "./test/plugins"
+      nxr-version:
+        required: false
+        type: string
+        default: "lastest"
+
+jobs:
+  test:
+    name: 'Test plugin on Vault v${{ inputs.vault-version }} + Nexus Repository v${{ inputs.nxr-version }}'
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - 
+        name: Setup Vault CLI
+        run: |
+          curl -LO 'https://releases.hashicorp.com/vault/${{ inputs.vault-version }}/vault_${{ inputs.vault-version }}_linux_amd64.zip' &&\
+            unzip 'vault_${{ inputs.vault-version }}_linux_amd64.zip' &&\
+            install vault /usr/local/bin &&\
+            rm -rf ./vault*
+      - 
+        name: Setup Bats and bats libs
+        id: setup-bats
+        uses: bats-core/bats-action@3.0.0
+        with:
+          support-install: false
+          detik-install: false
+          file-install: false
+      - 
+        name: Download plugin form build
+        if: github.action_ref != 'v*'
+        uses: actions/download-artifact@v4
+        with:
+          name: vault-plugin-secrets-nexus-repository
+          path: dist/bin
+      - 
+        name: Run test
+        shell: bash
+        env:
+          # BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
+          # TERM: xterm
+          VAULT_VERSION: ${{ inputs.vault-version }}
+          VAULT_PLUGIN_DIR: ${{ inputs.vault-plugin-dir }}
+          NXR_VERSION: ${{ inputs.nxr-version }}
+        #run: bats test/acceptance-tests.bats
+        run: |
+          chmod 755 -R "${VAULT_PLUGIN_DIR}"
+          bats test/acceptance-tests.bats

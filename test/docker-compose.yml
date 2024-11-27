@@ -1,0 +1,55 @@
+name: ${DOCKER_COMPOSE_NAME:-vault-nexus-acceptance-tests}
+##
+services:
+  nxr-tests:
+    image: "sonatype/nexus3:${NXR_VERSION:-latest}"
+    environment:
+      NEXUS_SECURITY_RANDOMPASSWORD: "false"
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - http://localhost:8081/service/rest/v1/status/writable
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    ports:
+      - "${NXR_SERVER_ADDR:-127.0.0.1}:${NXR_PORT:-8400}:8081"
+  #
+  vault-tests:
+    image: "hashicorp/vault:${VAULT_VERSION:-latest}"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "${VAULT_TOKEN:-root-token}"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    command:
+      - vault
+      - server
+      - -dev 
+      - -dev-plugin-dir=/vault/plugins
+      - -log-level=trace
+    healthcheck:
+      test:
+        - CMD
+        - vault
+        - status
+        - -address
+        - http://localhost:8200
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    ports:
+      - "${VAULT_SERVER_ADDR:-127.0.0.1}:${VAULT_PORT:-8200}:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - type: bind
+        source: ".${VAULT_PLUGIN_DIR:-./dist/bin}"
+        target: /vault/plugins
+        read_only: true
+##
+networks:
+  default: null

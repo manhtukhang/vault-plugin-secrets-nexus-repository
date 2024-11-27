@@ -1,4 +1,4 @@
-name: Test
+name: Unit Test
 
 on:
   push:
@@ -22,26 +22,28 @@ jobs:
     name: Test
     needs: pre_job
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [1.22]
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Go
+      -
+        uses: actions/checkout@v4
+      -
+        name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
-      - name: Setup gotest
+          go-version-file: ./go.mod
+          cache-dependency-path: ./go.sum
+      -
+        name: Setup gotest
         run: curl -L https://gotest-release.s3.amazonaws.com/gotest_linux > gotest && chmod +x gotest && sudo mv gotest /usr/bin/gotest
-      #
-      - name: Test
+      -
+        name: Test
         if: needs.pre_job.outputs.should_skip != 'true'
         run: make test-coverage
-      #
-      - name: Hack Code Climate and Go Modules
+      -
+        name: Hack Code Climate and Go Modules
         if: github.event_name != 'pull_request' && github.ref_name == 'main'
-        run: mkdir -p github.com/${{ github.repository_owner }} && ln -sf $(pwd) github.com/${{ github.repository }}
-      - name: Test & publish code coverage
+        run: mkdir -p "github.com/${{ github.repository_owner }}" && ln -sf "$(pwd)" "github.com/${{ github.repository }}"
+      -
+        name: Test & publish code coverage
         if: github.event_name != 'pull_request' && github.ref_name == 'main'
         uses: paambaati/codeclimate-action@v9
         env:
