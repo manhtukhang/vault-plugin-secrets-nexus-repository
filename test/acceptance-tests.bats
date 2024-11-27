@@ -44,15 +44,15 @@ vault=${VAULT_BIN:-"vault"} # Uses $PATH
 vault_docker_name=${VAULT_DOCKER_NAME:-"vault-tests"}
 vault_version=${VAULT_VERSION:-"latest"}
 vault_port=${VAULT_PORT:-"8200"}
-vault_server_addr="127.0.0.1"
+vault_server_addr=${VAULT_SERVER_ADDR:-"127.0.0.1"}
 export VAULT_ADDR="http://${vault_server_addr}:${vault_port}"
 export VAULT_TOKEN=${VAULT_TOKEN:-"root-token"}
 
 nxr_docker_name=${NXR_DOCKER_NAME:-"nxr-tests"}
 nxr_version=${NXR_VERSION:-"latest"}
+nxr_server_addr=${NXR_SERVER_ADDR:-"127.0.0.1"}
 nxr_port=${NXR_PORT:-"8400"}
-nxr_admin_password="notStr0ngEnough@@"
-
+nxr_admin_password="admin123"
 
 ##
 log() {
@@ -65,116 +65,49 @@ if [ "${vault_plugin_dir}" == "" ]; then
 fi
 
 ##
-stop_container() {
-  container_name="$1"
-
-  if [ -z "${container_name}" ]; then
-    log "Missing container name from stop_container call"
-    exit 1
-  fi
-
-  run docker ps -q -f name="${container_name}"
-  if [ "${output}" != "" ]; then
-    log "Killing container ${container_name}..."
-    docker kill "${container_name}"
-    log "Container ${container_name} has stopped"
-  fi
-}
-
-##
-start_nxr() {
-  log "[NXR] Starting Nexus Repository server..."
-
-  docker run \
-    --name ${nxr_docker_name} \
-    --rm \
-    --detach \
-    --network "${docker_network}" \
-    -p 127.0.0.1:${nxr_port}:8081 \
-    sonatype/nexus3:${nxr_version}
-  }
-
 wait_for_nxr(){
   log "[NXR] Waiting for Nexus Repository instance start..."
-  until [[ $(curl -sfI -X GET http://127.0.0.1:${nxr_port}/service/rest/v1/status/writable | grep 'HTTP/1.1 200 OK' 2>/dev/null) ]]; do
+  until [[ $(curl -sfI -X GET http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/writable | grep 'HTTP/1.1 200 OK' 2>/dev/null) ]]; do
      printf "."
      sleep 2
-  done;
-  
-  if [[ $(docker exec $nxr_docker_name bash -c "cat /nexus-data/admin.password" 2>/dev/null) ]]; then
-    log "[NXR] Initial admin password file is found, try to change password"
-    _old_password="$(docker exec $nxr_docker_name bash -c 'cat /nexus-data/admin.password')"
-    curl -sf --user "admin:${_old_password}" \
-      -X PUT -H 'Content-Type: text/plain' \
-      --data "${nxr_admin_password}" \
-      http://127.0.0.1:${nxr_port}/service/rest/v1/security/users/admin/change-password
-  fi
+  done
   
   log "[NXR] Verifying API status"
-  curl -sfI -X GET --user "admin:${nxr_admin_password}" http://127.0.0.1:${nxr_port}/service/rest/v1/status/check && \
+  curl -sfI -X GET --user "admin:${nxr_admin_password}" http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check && \
   log "[NXR] Ready!"|| \
   log "[NXR] Could not verify that Nexus Repository API worked, please see the error above and check again!"
 }
 
 ##
-start_vault() {
-  log "[VAULT] Starting Vault with plugin directory [${vault_plugin_dir}]"
-
-  docker run \
-    --name "${vault_docker_name}" \
-    --rm \
-    --detach \
-    --cap-add=IPC_LOCK \
-    --network "${docker_network}" \
-    -v "${vault_plugin_dir}:/vault/plugins" \
-    -p 127.0.0.1:${vault_port}:8200 \
-    -e VAULT_DEV_ROOT_TOKEN_ID="${VAULT_TOKEN}" \
-    -e VAULT_DEV_LISTEN_ADDRESS="0.0.0.0:8200" \
-    "hashicorp/vault:${vault_version}" \
-    vault \
-      server \
-      -dev \
-      -dev-plugin-dir /vault/plugins \
-      -log-level=trace
-}
-
-##
 wait_for_vault(){
   log "[VAULT] Waiting for vault to become available..."
-  run ${vault} status -address="${VAULT_ADDR}"
-  while [ "$status" -ne 0 ]; do
-    sleep 1
-    run ${vault} status -address="${VAULT_ADDR}"
+  until [[ $( ${vault} status -address="${VAULT_ADDR}" ) ]]; do
+    printf "."
+    sleep 2
   done
   log "[VAULT] Ready!"
 }
 
 ##
 setup_file() {
-  stop_container "${vault_docker_name}"
-  stop_container "${nxr_docker_name}"
-
-  if docker network ls -f "name=${docker_network}" | grep "${docker_network}"; then
-    docker network remove "${docker_network}"
-  fi
-
-  docker network create "${docker_network}" --driver bridge
-
-  start_vault
-  start_nxr
+  docker compose -f test/docker-compose.yml down
+  docker compose -f test/docker-compose.yml up -d
 
   wait_for_vault
   wait_for_nxr
-  
+
+  # vault plugin register \
+  #   -sha256="$(sha256sum ${VAULT_PLUGIN_DIR}/vault-plugin-secrets-nexus-repository | cut -d ' ' -f1)" \
+  #   -command="vault-plugin-secrets-nexus-repository" \
+  #   secret nexus
+
   vault secrets enable -path nexus vault-plugin-secrets-nexus-repository
 }
 
 ##
 teardown_file() {
   log "Tearing down containers..."
-  stop_container "${vault_docker_name}"
-  stop_container "${nxr_docker_name}"
-  docker network remove "${docker_network}"
+  docker compose -f test/docker-compose.yml down
   log "Teardown complete"
 }
 
@@ -451,4 +384,7 @@ teardown() {
 @test "Test config - Rotate admin password" {
   run vault write -f nexus/config/rotate
   [ ${status} -eq 0 ]
+
+  run curl -sfI -X GET --user "admin:${nxr_admin_password}" http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check
+  [ ${status} -ne 0 ]
 }
