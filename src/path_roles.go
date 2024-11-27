@@ -114,7 +114,7 @@ func pathRoles(b *backend) []*framework.Path {
 			},
 			HelpSynopsis:    pathRolesHelpSynopsis,
 			HelpDescription: pathRolesHelpDescription,
-			ExistenceCheck:  b.pathRolesExistenceCheck,
+			ExistenceCheck:  b.pathExistenceCheck,
 		},
 		{
 			Pattern: rolesPath + "?$",
@@ -127,16 +127,6 @@ func pathRoles(b *backend) []*framework.Path {
 			HelpDescription: pathRolesListHelpDescription,
 		},
 	}
-}
-
-// pathRolesExistenceCheck verifies if the role exists
-func (b *backend) pathRolesExistenceCheck(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
-	out, err := req.Storage.Get(ctx, req.Path)
-	if err != nil {
-		return false, err
-	}
-
-	return out != nil, nil
 }
 
 // pathRolesList makes a request to Vault storage to retrieve a list of roles for the backend

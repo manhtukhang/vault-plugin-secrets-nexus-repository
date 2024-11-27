@@ -93,14 +93,14 @@ func pathConfigAdmin(b *backend) *framework.Path {
 				Summary:  "Delete the Nexus Repository admin configuration.",
 			},
 		},
-		ExistenceCheck:  b.pathConfigAdminExistenceCheck,
+		ExistenceCheck:  b.pathExistenceCheck,
 		HelpSynopsis:    pathConfigAdminHelpSynopsis,
 		HelpDescription: pathConfigAdminHelpDescription,
 	}
 }
 
-// pathConfigAdminExistenceCheck verifies if the configuration exists.
-func (b *backend) pathConfigAdminExistenceCheck(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
+// pathExistenceCheck verifies if the configuration of path exists.
+func (b *backend) pathExistenceCheck(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
 	out, err := req.Storage.Get(ctx, req.Path)
 	if err != nil {
 		return false, err
