@@ -16,6 +16,7 @@ jobs:
           skip_after_successful_duplicate: 'true'
           cancel_others: 'true'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+          paths: '["go.mod", "go.sum", "src/**/*"]'
   golangci:
     name: GolangCI Lint
     needs: pre_job

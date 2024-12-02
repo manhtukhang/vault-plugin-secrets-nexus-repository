@@ -1,0 +1,38 @@
+# Add 'others' label to any file changes
+others:
+- changed-files:
+  - any-glob-to-any-file: '**'
+
+# Add 'Documentation' label to any file changes within 'docs' or 'guides' folders
+documentation:
+- changed-files:
+  - any-glob-to-any-file:
+    - 'docs/**'
+    - 'guides/**'
+    - '**/*.md'
+    - '**/*.MD'
+
+# Add 'source' label to any change to src files
+source:
+- all:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'src/**/*'
+        - 'go.mod'
+        - 'go.sum'
+
+# Add 'feature' label to any PR where the head branch name starts with `feature` or has a `feature` section in the name
+feature:
+ - head-branch:
+    - '^feature'
+    - '^feat'
+    - 'feature'
+    - 'feat'
+
+# Add 'bug' label to any PR where the head branch name starts with `bug` or has a `fix` section in the name
+bug:
+ - head-branch:
+    - '^bug'
+    - '^fix'
+    - 'bug'
+    - 'fix'
