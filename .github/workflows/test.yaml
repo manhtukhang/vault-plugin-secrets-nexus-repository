@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
 
+
 jobs:
   pre_job:
     # continue-on-error: true
@@ -12,7 +13,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        uses: fkirc/skip-duplicate-actions@v5
+        uses: fkirc/skip-duplicate-actions@f75f66ce1886f00957d99748a42c724f4330bdcf # v5.3.1
         with:
           concurrent_skipping: 'same_content_newer'
           skip_after_successful_duplicate: 'true'
@@ -24,29 +25,29 @@ jobs:
     needs: pre_job
     runs-on: ubuntu-latest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        name: Setup Go
-        uses: actions/setup-go@v5
+      
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Go
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: ./go.mod
           cache-dependency-path: ./go.sum
-      -
-        name: Setup gotest
+
+      - name: Setup gotest
         run: curl -L https://gotest-release.s3.amazonaws.com/gotest_linux > gotest && chmod +x gotest && sudo mv gotest /usr/bin/gotest
-      -
-        name: Test
+
+      - name: Test
         if: needs.pre_job.outputs.should_skip != 'true'
         run: make test-coverage
-      -
-        name: Hack Code Climate and Go Modules
+
+      - name: Hack Code Climate and Go Modules
         if: github.event_name != 'pull_request' && github.ref_name == 'main'
         run: mkdir -p "github.com/${{ github.repository_owner }}" && ln -sf "$(pwd)" "github.com/${{ github.repository }}"
-      -
-        name: Test & publish code coverage
+
+      - name: Test & publish code coverage
         if: github.event_name != 'pull_request' && github.ref_name == 'main'
-        uses: paambaati/codeclimate-action@v9
+        uses: paambaati/codeclimate-action@f429536ee076d758a24705203199548125a28ca7 # v9.0.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         with:

@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
 
+
 jobs:
   pre_job:
     # continue-on-error: true
@@ -12,7 +13,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        uses: fkirc/skip-duplicate-actions@v5
+        uses: fkirc/skip-duplicate-actions@f75f66ce1886f00957d99748a42c724f4330bdcf # v5.3.1
         with:
           concurrent_skipping: 'same_content_newer'
           skip_after_successful_duplicate: 'true'
@@ -25,35 +26,35 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.pre_job.outputs.should_skip != 'true'
     steps:
-      - 
-        uses: actions/checkout@v4
+      
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - 
-        name: Setup Go
-        uses: actions/setup-go@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: ./go.mod
           cache-dependency-path: ./go.sum
-      - 
-        name: Build plugin
+
+      - name: Build plugin
         id: build-plugin
         run: make build
-      - 
-        name: Upload plugin
-        uses: actions/upload-artifact@v4
+
+      - name: Upload plugin
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: vault-plugin-secrets-nexus-repository
           path: dist/bin
           if-no-files-found: error
   test:
-    needs: [pre_job, build]
+    needs: [ pre_job, build ]
     strategy:
       matrix:
-        vault: ["1.17.6", "1.18.2"]
-        nexus: ["3.73.0", "3.74.0"]
+        vault: [ "1.17.6", "1.18.2" ]
+        nexus: [ "3.73.0", "3.74.0" ]
     uses: ./.github/workflows/_test-acceptance.tmpl.yaml
     with:
-      vault-version: ${{ matrix.vault }}  
-      nxr-version: ${{ matrix.nexus }}  
+      vault-version: ${{ matrix.vault }}
+      nxr-version: ${{ matrix.nexus }}
       vault-plugin-dir: ./dist/bin
