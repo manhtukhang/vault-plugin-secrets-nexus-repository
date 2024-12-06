@@ -2,6 +2,7 @@ name: Acceptance Test
 
 on:
   push:
+    tags-ignore: '**'
   pull_request:
 
 
@@ -48,6 +49,8 @@ jobs:
           path: dist/bin
           if-no-files-found: error
   test:
+    permissions:
+      contents: write
     needs: [ pre_job, build ]
     strategy:
       matrix:
