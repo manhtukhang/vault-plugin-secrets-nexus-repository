@@ -27,7 +27,7 @@ services:
     command:
       - vault
       - server
-      - -dev 
+      - -dev
       - -dev-plugin-dir=/vault/plugins
       - -log-level=trace
     healthcheck:
