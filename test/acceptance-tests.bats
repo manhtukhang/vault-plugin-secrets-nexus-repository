@@ -34,22 +34,22 @@
 #                 Default: "vault-nexus-acceptance-tests-network"
 
 # Required
-vault_plugin_dir=${VAULT_PLUGIN_DIR}
+vault_plugin_dir=${VAULT_PLUGIN_DIR:-"./dist/bin"}
 
 # Optional
-docker_network=${DOCKER_NETWORK:-"vault-nexus-acceptance-tests-network"}
+# docker_network=${DOCKER_NETWORK:-"vault-nexus-acceptance-tests-network"}
 
 vault=${VAULT_BIN:-"vault"} # Uses $PATH
 
-vault_docker_name=${VAULT_DOCKER_NAME:-"vault-tests"}
-vault_version=${VAULT_VERSION:-"latest"}
+# vault_docker_name=${VAULT_DOCKER_NAME:-"vault-tests"}
+# vault_version=${VAULT_VERSION:-"latest"}
 vault_port=${VAULT_PORT:-"8200"}
 vault_server_addr=${VAULT_SERVER_ADDR:-"127.0.0.1"}
 export VAULT_ADDR="http://${vault_server_addr}:${vault_port}"
 export VAULT_TOKEN=${VAULT_TOKEN:-"root-token"}
 
 nxr_docker_name=${NXR_DOCKER_NAME:-"nxr-tests"}
-nxr_version=${NXR_VERSION:-"latest"}
+# nxr_version=${NXR_VERSION:-"latest"}
 nxr_server_addr=${NXR_SERVER_ADDR:-"127.0.0.1"}
 nxr_port=${NXR_PORT:-"8400"}
 nxr_admin_password="admin123"
@@ -67,21 +67,23 @@ fi
 ##
 wait_for_nxr(){
   log "[NXR] Waiting for Nexus Repository instance start..."
-  until [[ $(curl -sfI -X GET http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/writable | grep 'HTTP/1.1 200 OK' 2>/dev/null) ]]; do
-     printf "."
-     sleep 2
+  until (curl -sfI -X GET "http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/writable" | grep -q 'HTTP/1.1 200 OK'); do
+    printf "."
+    sleep 2
   done
-  
+
   log "[NXR] Verifying API status"
-  curl -sfI -X GET --user "admin:${nxr_admin_password}" http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check && \
-  log "[NXR] Ready!"|| \
-  log "[NXR] Could not verify that Nexus Repository API worked, please see the error above and check again!"
+  if (curl -sfI -X GET --user "admin:${nxr_admin_password}" "http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check"); then
+    log "[NXR] Ready!"
+  else
+    log "[NXR] Could not verify that Nexus Repository API worked, please see the error above and check again!"
+  fi
 }
 
 ##
 wait_for_vault(){
   log "[VAULT] Waiting for vault to become available..."
-  until [[ $( ${vault} status -address="${VAULT_ADDR}" ) ]]; do
+  until ( ${vault} status -address="${VAULT_ADDR}" ); do
     printf "."
     sleep 2
   done
@@ -125,7 +127,7 @@ teardown() {
   for role in ${roles}; do
     vault delete "nexus/roles/${role}" > /dev/null
   done
-  
+
   #
   vault delete nexus/config/admin
 }
@@ -344,7 +346,7 @@ teardown() {
     run vault write -format=json sys/leases/lookup lease_id="${lease_id}"
     [ ${status} -eq 0 ]
     _ttl=$(echo "${output}" | jq .data.ttl)
-    if [ ${_ttl} -le ${wait_until_dur} ]; then
+    if [ "${_ttl}" -le "${wait_until_dur}" ]; then
       break
     fi
     sleep 1
@@ -362,7 +364,7 @@ teardown() {
   log "Sleeping until after original TTL (${sleep_time}s)..."
   sleep $((sleep_time))
 
-  run curl -sfI -X GET --user "${user_id}:${password}" "http://127.0.0.1:${nxr_port}/service/rest/v1/status/check"
+  run curl -sfI -X GET --user "${user_id}:${password}" "http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check"
   [ ${status} -eq 0 ]
   [[ "${output}" == *"200 OK"* ]]
 
@@ -375,7 +377,7 @@ teardown() {
     sleep 1
   done
 
-  run curl -sfI -X GET --user "${user_id}:${password}" "http://127.0.0.1:${nxr_port}/service/rest/v1/status/check"
+  run curl -sfI -X GET --user "${user_id}:${password}" "http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check"
   [ ${status} -ne 0 ]
   [[ "${output}" == *"401 Unauthorized"* ]]
 }
@@ -385,6 +387,6 @@ teardown() {
   run vault write -f nexus/config/rotate
   [ ${status} -eq 0 ]
 
-  run curl -sfI -X GET --user "admin:${nxr_admin_password}" http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check
+  run curl -sfI -X GET --user "admin:${nxr_admin_password}" "http://${nxr_server_addr}:${nxr_port}/service/rest/v1/status/check"
   [ ${status} -ne 0 ]
 }
