@@ -8,11 +8,10 @@ on:
 permissions:
   contents: read
 
-
 jobs:
   goreleaser:
     permissions:
-      contents: write  # for goreleaser/goreleaser-action to create a GitHub release
+      contents: write # for goreleaser/goreleaser-action to create a GitHub release
     runs-on: ubuntu-latest
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
@@ -53,13 +52,49 @@ jobs:
           echo "hashes=$(cat $checksum_file | base64 -w0)" >> "$GITHUB_OUTPUT"
           echo "project-name=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)" >> "$GITHUB_OUTPUT"
 
+  attestation:
+    needs: [ goreleaser ]
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      attestations: write # To upload attestations.
+      contents: write # To download assets from draft release.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_NAME: ${{ needs.goreleaser.outputs.project-name }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release download "${VERSION}" -p "${PROJECT_NAME}_${VERSION}_*" -D ./artifacts
+
+      - name: Generate artifacts attestation
+        id: gen-att
+        uses: actions/attest-build-provenance@619dbb2e03e0189af0c55118e7d3c5e129e99726 # v2.0.0
+        with:
+          subject-path: "${{ github.workspace }}/artifacts/*"
+      #
+      # - name: Upload attestation
+      #   uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+      #   with:
+      #     draft: true
+      #     tag_name: ${{ github.ref_name }}
+      #     files: |
+      #       ${{ steps.gen-att.outputs.bundle-path }}
+
   provenance:
-    needs: [goreleaser]
+    needs: [ goreleaser ]
     permissions:
       actions: read # To read the workflow path.
       id-token: write # To sign the provenance.
       contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0 # Do not use tag
     with:
       base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
       provenance-name: "${{ needs.goreleaser.outputs.project-name }}_${{ github.ref_name }}.intoto.jsonl"
@@ -67,7 +102,7 @@ jobs:
       draft-release: true
 
   verification:
-    needs: [goreleaser, provenance]
+    needs: [ goreleaser, attestation, provenance ]
     runs-on: ubuntu-latest
     permissions:
       contents: write # To download assets from draft release.
@@ -92,6 +127,7 @@ jobs:
 
       - name: Verify assets
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHECKSUMS: ${{ needs.goreleaser.outputs.hashes }}
           PROVENANCE: "${{ needs.provenance.outputs.provenance-name }}"
           VERSION: ${{ github.ref_name }}
@@ -100,7 +136,11 @@ jobs:
           checksums="$(echo ${CHECKSUMS} | base64 -d)"
           while read -r line; do
               fn="$(echo ${line} | cut -d ' ' -f2)"
-              echo "Verifying ${fn}"
+
+              echo "Verifying ${fn} with GH CLI"
+              gh attestation verify "${fn}" --repo "${GITHUB_REPOSITORY}"
+
+              echo "Verifying ${fn} with slsa-verifier"
               slsa-verifier verify-artifact --provenance-path "${PROVENANCE}" \
                                             --source-uri "github.com/${GITHUB_REPOSITORY}" \
                                             --source-tag "${VERSION}" \
@@ -108,7 +148,7 @@ jobs:
           done <<<"$checksums"
 
   acceptance-test:
-    needs: [ goreleaser, provenance ]
+    needs: [ goreleaser, attestation, provenance ]
     permissions:
       contents: write # To download assets from draft release.
     strategy:
