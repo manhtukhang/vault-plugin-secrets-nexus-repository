@@ -1,10 +1,20 @@
 name: Lint
+
 on:
   push:
+    branches: "*"
   pull_request:
+
+
+permissions:
+  contents: read
+
 jobs:
   pre_job:
     # continue-on-error: true
+    permissions:
+      actions: write # for fkirc/skip-duplicate-actions to skip or stop workflow runs
+      contents: read # for fkirc/skip-duplicate-actions to read and compare commits
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
@@ -17,13 +27,25 @@ jobs:
           cancel_others: 'true'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
           paths: '["go.mod", "go.sum", "src/**/*"]'
+
   golangci:
     name: GolangCI Lint
     needs: pre_job
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      pull-requests: read # for golangci/golangci-lint-action to fetch pull requests
     runs-on: ubuntu-latest
     if: needs.pre_job.outputs.should_skip != 'true'
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
