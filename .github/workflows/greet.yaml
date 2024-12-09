@@ -7,10 +7,21 @@ on:
   issues:
 
 
+permissions:
+  contents: read
+
 jobs:
   greeting:
+    permissions:
+      issues: write # for actions/first-interaction to comment on first issue
+      pull-requests: write # for actions/first-interaction to comment on first PR
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
       - name: Greetings for PR and issues
         uses: actions/first-interaction@34f15e814fe48ac9312ccf29db4e74fa767cbab7 # v1.3.0
         with:

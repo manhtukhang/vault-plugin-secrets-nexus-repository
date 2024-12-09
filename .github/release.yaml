@@ -16,6 +16,6 @@ changelog:
     - title: 👒 Dependencies
       labels:
         - dependencies
-    - title: 📚 Other Changes 
+    - title: 📚 Other Changes
       labels:
         - "*"
