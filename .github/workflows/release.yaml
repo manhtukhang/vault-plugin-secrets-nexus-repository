@@ -1,4 +1,4 @@
-name: Secure Release
+name: Secured Release
 
 on:
   push:
@@ -31,6 +31,8 @@ jobs:
         with:
           go-version-file: ./go.mod
           cache-dependency-path: ./go.sum
+
+      - uses: anchore/sbom-action/download-syft@55dc4ee22412511ee8c3142cbea40418e6cec693 #v0.17.8
 
       - name: Run GoReleaser
         id: run-goreleaser
