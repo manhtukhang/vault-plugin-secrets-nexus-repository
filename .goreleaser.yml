@@ -43,6 +43,9 @@ builds:
           cd dist/{{ .ProjectName }}_{{ .Target }} &&\
           sha256sum {{ .ProjectName }}_v{{ .Version }}* > ../../{{ .ProjectName }}_v{{ .Version }}_SHA256SUM.txt
         "
+sboms:
+  - id: spdx
+    artifacts: archive
 checksum:
   algorithm: sha256
   name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS.txt'
