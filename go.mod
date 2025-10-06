@@ -1,11 +1,11 @@
 module github.com/manhtukhang/vault-plugin-secrets-nexus-repository
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/datadrivers/go-nexus-client v1.14.0
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/hashicorp/vault/api v1.16.0
+	github.com/hashicorp/vault/api v1.22.0
 	github.com/hashicorp/vault/sdk v0.14.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sethvargo/go-password v0.3.1
@@ -25,9 +25,9 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
-	github.com/fatih/color v1.16.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -41,23 +41,23 @@ require (
 	github.com/hashicorp/go-kms-wrapping/v2 v2.0.8 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.6.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/base62 v0.1.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/mlock v0.1.2 // indirect
-	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.8 // indirect
+	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
 	github.com/hashicorp/go-secure-stdlib/plugincontainer v0.4.0 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
-	github.com/hashicorp/go-sockaddr v1.0.6 // indirect
+	github.com/hashicorp/go-sockaddr v1.0.7 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/hashicorp/hcl v1.0.1-vault-5 // indirect
+	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/joshlf/go-acl v0.0.0-20200411065538-eae00ae38531 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -88,14 +88,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.4.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.22.0 // indirect
+	golang.org/x/crypto v0.40.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
+	golang.org/x/tools v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/grpc v1.68.0 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
