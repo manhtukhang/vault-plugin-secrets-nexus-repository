@@ -9,7 +9,7 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/cc38296a9c2c3bb2c023/test_coverage)](https://codeclimate.com/github/manhtukhang/vault-plugin-secrets-nexus-repository/test_coverage)
 
 ---
-# Vault Secrets Plugin for Nexus Reporitory
+# Vault Secrets Plugin for Nexus Repository
 
 This is a [(HashiCorp) Vault secrets plugin](https://developer.hashicorp.com/vault/docs/plugins) which talks to [(Sonatype) Nexus Repository](https://www.sonatype.com/products/sonatype-nexus-repository) server and will dynamically create/revoke local user with predefined role(s). This backend can be mounted multiple times to provide access to multiple Nexus Repository servers, and work with both Pro and OSS versions.
 
